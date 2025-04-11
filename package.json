@@ -1,0 +1,24 @@
+{
+  "name": "svlesstemplate",
+  "version": "1.0.0",
+  "description": "A serverless backend project using TypeScript and AWS SDK.",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "deploy": "serverless deploy",
+    "offline": "serverless offline"
+  },
+  "dependencies": {
+    "aws-lambda": "^1.0.7",
+    "aws-sdk": "^2.1234.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.51",
+    "serverless": "^2.60.0",
+    "serverless-dotenv-plugin": "^6.0.0",
+    "serverless-offline": "^8.0.0",
+    "serverless-plugin-typescript": "^2.1.5",
+    "typescript": "^4.5.0"
+  },
+  "license": "MIT"
+}
