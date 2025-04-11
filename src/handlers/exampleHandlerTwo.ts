@@ -1,20 +1,21 @@
-export const exampleHandlerTwo = async (event: any) => {
-    // Import the middleware and repository
-    const { exampleMiddleware } = require('../middleware/exampleMiddleware');
-    const { ExampleRepository } = require('../repository/exampleRepository');
+import { Handler } from 'aws-lambda';
+export const exampleHandlerTwo: Handler = async (event: any) => {    // const { exampleMiddleware } = require('../middleware/exampleMiddleware');
+    // const { ExampleRepository } = require('../repository/exampleRepository');
 
-    // Use the middleware to process the request
-    const processedEvent = exampleMiddleware(event);
+    // // Process the request using the middleware
+    // const processedEvent = exampleMiddleware(event);
 
-    // Create an instance of the repository
-    const repository = new ExampleRepository();
+    // // Create an instance of the repository
+    // const repository = new ExampleRepository();
 
-    // Perform an operation using the repository
-    const result = await repository.getData(processedEvent);
+    // // Perform an operation, e.g., saving data
+    // const result = await repository.saveData(processedEvent);
 
-    // Return the result
     return {
         statusCode: 200,
-        body: JSON.stringify(result),
+        body: JSON.stringify({
+            message: 'Data saved successfully',
+            // data: result,
+        }),
     };
 };
