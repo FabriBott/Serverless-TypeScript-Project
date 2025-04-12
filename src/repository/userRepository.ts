@@ -1,5 +1,4 @@
 // repository/exampleRepository.ts
-
 interface User {
     id: string;
     balance: number;
@@ -40,11 +39,24 @@ class UserRepository {
         return `Payment of ${amount}$ processed successfully for ${userId}`;
     }
 
+    // Verifica si el usuario existe
+    async userExists(userId: string): Promise<boolean> {
+        const user = this.dataStore.find((user) => user.id === userId);
+        return user !== undefined;
+    }
+
+    // Obtiene el usuario por ID
+    async getUserById(userId: string): Promise<User | null> {
+        const user = this.dataStore.find((user) => user.id === userId);
+        return user || null;
+    }
+
+    // Métodos adicionales para interactuar con el 'dataStore'
     getData(): any[] {
         return this.dataStore;
     }
 
-    saveData(data: any): void {
+    saveData(data: User): void {
         this.dataStore.push(data);
     }
 }

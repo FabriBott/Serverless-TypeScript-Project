@@ -22,4 +22,10 @@ export class userService {
 
         return paymentResult;
     }
+
+    // Método para verificar si el usuario existe
+    async userExists(userId: string): Promise<boolean> {
+        const user = await this.repository.getUserById(userId); // Suponiendo que 'getUserById' es un método de tu repositorio
+        return user !== null;
+    }
 }

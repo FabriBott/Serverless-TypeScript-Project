@@ -94,65 +94,105 @@ serverless deploy
 During development, the following issues were encountered and resolved:
 1. TypeScript Compilation & Module Resolution
 
-Issue: 502 Bad Gateway and Cannot find module 'src/handlers/…' when invoking Lambdas
-Cause: Serverless was pointing to uncompiled .ts files
-Fix: Install serverless-plugin-typescript, and added it to the serverless.yml on plugins
+    Issue: 502 Bad Gateway and Cannot find module 'src/handlers/…' when invoking Lambdas
+    
+    Cause: Serverless was pointing to uncompiled .ts files
+    
+    Fix: Install serverless-plugin-typescript, and added it to the serverless.yml on plugins
 
 2. Compatibility error with the middleware and Lambda
 
-Issue: The original middleware used next() which is unsupported in Lambda
-Cause: Middleware pattern not compatible with Lambda
-Fix: Refactor exampleMiddleware to process the event and return it:
+    Issue: The original middleware used next() which is unsupported in Lambda
+    
+    Cause: Middleware pattern not compatible with Lambda
+    
+    Fix: Refactor exampleMiddleware to process the event and return it:
 
-```
-export const exampleMiddleware = async (event: any) => {
-  console.log('Middleware processing:', event);
-  if (!event.body) throw new Error('No body');
-  event.processed = true;
-  return event;
-};
-```
+    ```ts
+    export const exampleMiddleware = async (event: any) => {
+      console.log('Middleware processing:', event);
+      if (!event.body) throw new Error('No body');
+      event.processed = true;
+      return event;
+    };
+    ```
 
 3. error in the Try-Catch
 
-Issue: the error message caused an error in th catch block
-Cause: TypeScript treats errors as unknown
-Fix: Add a type check:
+    Issue: the error message caused an error in th catch block
+    
+    Cause: TypeScript treats errors as unknown
+    
+    Fix: Add a type check:
 
-```
-} catch (error: unknown) {
-  if (error instanceof Error) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: error.message }),
-    };
-  }
-  return {
-    statusCode: 500,
-    body: JSON.stringify({ error: 'Unknown error' }),
-  };
-}
+    ```ts
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        return {
+          statusCode: 500,
+          body: JSON.stringify({ error: error.message }),
+        };
+      }
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: 'Unknown error' }),
+      };
+    }
 
-```
+    ```
 
 4. Parsing the HTTP request body
 
-Issue: the data sent in the json on the POST appeared as undefined when recieved via Serverless Offline
-Cause: event.body wasnt parsed from string
-Fix: manually parse body:
+    Issue: the data sent in the json on the POST appeared as undefined when recieved via Serverless Offline
 
-```
-const body = typeof event.body === 'string'
-  ? JSON.parse(event.body)
-  : event.body;
+    Cause: event.body wasnt parsed from string
+    
+    Fix: manually parse body:
 
-const { userId, cardNumber, ... } = body;
+    ```ts
+    const body = typeof event.body === 'string'
+      ? JSON.parse(event.body)
+      : event.body;
 
-```
+    const { userId, cardNumber, ... } = body;
+
+    ```
 
 5. Error in serverless deployment
 
-Issue: when runnig serverless deploy it sent an error of credentials
-Cause: on the .env where AWS keys and other information that shouldnt be there
-Fix: delete on the .env the reference of AWS keys and related
+    Issue: when runnig serverless deploy it sent an error of credentials
+
+    Cause: on the .env where AWS keys and other information that shouldnt be there
+
+    Fix: delete on the .env the reference of AWS keys and related
+
+6. Middleware Authorization Failure (502 Unauthorized)
+
+    Issue: Getting 502 Unauthorized when invoking a Lambda with middleware
+
+    Cause: The authMiddleware was expecting a valid Authorization header, but it was missing or not parsed
+
+    Fix: Hardcoded token in authMiddleware for testing purposes, and improved error handling
+
+7. Chaining Middleware Execution
+
+    Issue: Need to allow chaining of multiple middleware
+
+    Cause: No structure in place to enforce required middleware
+
+    Fix: Implemented middlewareManager (chain of responsibility pattern). push middlewares into an array and execute them in a sequence.
+  
+      ```ts
+      for (const middleware of this.middlewares) {
+        event = await middleware.execute(event);
+      }
+      ```
+
+8. Design pattern for the middleware
+
+    Issue: some middleware shouldnt be optional (like the authMiddleware)
+
+    Cause: All middleware were treated equally, without distinction between optional and required
+
+    Fix: Authentication middleware was always inserted first in the chain and executed before others. If it throws, the chain is stopped, enforcing its required status.
 
