@@ -64,6 +64,15 @@ Then, add the following to your `serverless.yml` under `plugins`:
 ```yaml
 plugins:
   - serverless-offline
+  - serverless-plugin-typescript
+```
+
+Then, add the following to your `package.json` under `dependencies`:
+
+```json
+   "dependencies": {
+    "aws-lambda": "^1.0.7",
+   }
 ```
 
 Now you can run the application locally:
@@ -80,12 +89,63 @@ To deploy the application to AWS, run the following command:
 serverless deploy
 ```
 
-This command will package your application and deploy it to AWS, creating the necessary resources.
+## Fixes & Adjustments
 
-## Modifying the Application
+During development, the following issues were encountered and resolved:
+1. TypeScript Compilation & Module Resolution
 
-- **Handlers**: Modify `src/handlers/exampleHandlerOne.ts` and `src/handlers/exampleHandlerTwo.ts` to change the behavior of your Lambda functions.
-- **Middleware**: Update `src/middleware/exampleMiddleware.ts` to add or modify request processing logic.
-- **Repository**: Change `src/repository/exampleRepository.ts` to adjust data operations.
-- **Logging**: Use the `log` function from `src/utils/logger.ts` for logging throughout your application.
+Issue: 502 Bad Gateway and Cannot find module 'src/handlers/…' when invoking Lambdas
+Cause: Serverless was pointing to uncompiled .ts files
+Fix: Install serverless-plugin-typescript, and added it to the serverless.yml on plugins
 
+2. Compatibility error with the middleware and Lambda
+
+Issue: The original middleware used next() which is unsupported in Lambda
+Cause: Middleware pattern not compatible with Lambda
+Fix: Refactor exampleMiddleware to process the event and return it:
+
+```
+export const exampleMiddleware = async (event: any) => {
+  console.log('Middleware processing:', event);
+  if (!event.body) throw new Error('No body');
+  event.processed = true;
+  return event;
+};
+```
+
+3. error in the Try-Catch
+
+Issue: the error message caused an error in th catch block
+Cause: TypeScript treats errors as unknown
+Fix: Add a type check:
+
+```
+} catch (error: unknown) {
+  if (error instanceof Error) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: error.message }),
+    };
+  }
+  return {
+    statusCode: 500,
+    body: JSON.stringify({ error: 'Unknown error' }),
+  };
+}
+
+```
+
+4. Parsing the HTTP request body
+
+Issue: the data sent in the json on the POST appeared as undefined when recieved via Serverless Offline
+Cause: event.body wasnt parsed from string
+Fix: manually parse body:
+
+```
+const body = typeof event.body === 'string'
+  ? JSON.parse(event.body)
+  : event.body;
+
+const { userId, cardNumber, ... } = body;
+
+```
