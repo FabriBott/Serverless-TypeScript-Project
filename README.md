@@ -149,3 +149,10 @@ const body = typeof event.body === 'string'
 const { userId, cardNumber, ... } = body;
 
 ```
+
+5. Error in serverless deployment
+
+Issue: when runnig serverless deploy it sent an error of credentials
+Cause: on the .env where AWS keys and other information that shouldnt be there
+Fix: delete on the .env the reference of AWS keys and related
+

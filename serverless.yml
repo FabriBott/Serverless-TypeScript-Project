@@ -6,6 +6,9 @@ provider:
   region: us-east-2
   environment:
     AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+    LOG_LEVEL: ${env:LOG_LEVEL}
+    DYNAMODB_TABLE: ${env:DYNAMODB_TABLE}
+    NODE_ENV: ${env:NODE_ENV}
 
 functions:
   exampleHandlerOne:
@@ -26,13 +29,10 @@ plugins:
   - serverless-plugin-typescript
   - serverless-dotenv-plugin
   - serverless-offline
+
 package:
   individually: true
 
 custom:
   dotenv:
     path: .env
-    
-# resources:
-#   Resources:
-#     # Add any additional resources here if needed
