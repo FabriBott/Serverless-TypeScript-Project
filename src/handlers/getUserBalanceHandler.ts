@@ -33,7 +33,27 @@ const rawHandler = async (
         const body = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
         const { userId, amount } = body;
 
+        if (!userId || !amount) {
+            logger.log('Missing userId or amount');
+            return {
+                statusCode: 400,
+                body: JSON.stringify({
+                    message: 'Missing userId or amount',
+                })
+            };
+        }
+
         const result = await service.processPayment(userId, amount);
+
+        if (!result) {
+            logger.log(`User not found for userId: ${userId}`);
+            return {
+                statusCode: 404,
+                body: JSON.stringify({
+                    message: 'User not found',
+                })
+            };
+        }
 
         logger.log(`Payment successful for user ${userId} with amount ${amount}`);
 
@@ -45,19 +65,20 @@ const rawHandler = async (
             })
         };
     } catch (error: unknown) {
-        logger.log(`Error processing event: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        logger.log(`Error processing purchase: ${errorMessage}`);
 
         return {
-            statusCode: 400,
+            statusCode: 500,
             body: JSON.stringify({
                 message: 'Error processing purchase',
-                error: error instanceof Error ? error.message : 'Unknown error'
+                error: errorMessage
             })
         };
     }
 };
 
-// Exportamos el handler ya envuelto en middlewares
+// Exportamos el handler con middlewares
 export const getUserBalanceHandler = withMiddleware(
     rawHandler,
     [new loggerMiddleware()],

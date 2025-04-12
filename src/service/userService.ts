@@ -14,7 +14,9 @@ export class userService {
         const userBalance = await this.repository.getUserBalance(userId);
 
         if (userBalance < amount) {
-            throw new Error('Insufficient funds');
+            const error = new Error('Insufficient funds');
+            (error as any).code = 'INSUFFICIENT_FUNDS';
+            throw error;
         }
 
         // if the balance is enough process purchase
@@ -25,7 +27,7 @@ export class userService {
 
     // Método para verificar si el usuario existe
     async userExists(userId: string): Promise<boolean> {
-        const user = await this.repository.getUserById(userId); // Suponiendo que 'getUserById' es un método de tu repositorio
+        const user = await this.repository.getUserById(userId);
         return user !== null;
     }
 }

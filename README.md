@@ -8,15 +8,28 @@ This project is a serverless application built with TypeScript, utilizing AWS se
 svlesstemplate
 ├── src
 │   ├── handlers
-│   │   ├── exampleHandlerOne.ts
-│   │   └── exampleHandlerTwo.ts
+│   │   ├── getUserBalanceHandler.ts
+│   │   └── paymentHandler.ts
 │   ├── middleware
-│   │   └── exampleMiddleware.ts
+│   │   ├── authMiddleware.ts
+|   │   ├── iMiddleware.ts
+|   │   ├── loggerMiddleware.ts
+|   │   ├── middleWareManager.ts
+|   │   └── validateUserRequestsMiddleware.ts
 │   ├── repository
-│   │   └── exampleRepository.ts
+│   │   ├── paymentRepository.ts
+|   │   └── userRepository.ts
+│   ├── service
+│   │   ├── logger.ts
+│   │   ├── paymentService.ts
+│   │   └──userService.ts
 │   └── utils
 │       └── logger.ts
+├── tests \ handler
+|   ├── getUserBalanceHandler.test.ts
+|   └── paymentHandler.test.ts
 ├── .env
+├── jest.config.js
 ├── serverless.yml
 ├── package.json
 ├── tsconfig.json
@@ -195,4 +208,138 @@ During development, the following issues were encountered and resolved:
     Cause: All middleware were treated equally, without distinction between optional and required
 
     Fix: Authentication middleware was always inserted first in the chain and executed before others. If it throws, the chain is stopped, enforcing its required status.
+
+
+## POC
+
+POC Step 1: Handler Responsibilities (SOLID & Cohesion Principle)
+
+    Challenge:
+    Handlers in the original template mixed the business logic and data, and accesing repositories directly, that led leading to low cohesion and hard-to-maintain code
+
+    Solution:
+
+        Split responsibilities into two distinct handlers:
+
+            getUserBalanceHandler for checking balance and initiating payment
+
+            paymentHandler for processing card payments
+
+        Introduced a service layer (UserService, PaymentService, logger) that encapsulates business logic and interacts with repositories
+
+    Advantages over Original Template:
+
+        Clearer responsibilities: Each handler now has a single task, better defined
+
+        Decoupling: Handlers no longer access repositories directly, making testing and other aspects like scalability easier
+
+        Maintainability: Future changes in business logic or data sources only affect the service layer, not the handlers
+
+POC Step 2: README.md Fixes & Adjustments
+
+    Challenge:
+    Original README lacked documentation of deployment issues and fixes, causing confusion around Serverless configuration and AWS permissions
+
+    Solution Chosen:
+
+        Updated the README to include:
+
+            A list of encountered errors (reserved environment variables, IAM permission issues)
+
+            Step by step fixes applied (e.g., removing AWS keys from .env, adding serverless-plugin-typescript, adjusting provider.environment)
+
+            Clearer and better instructions
+
+    Advantages over Original Template:
+
+        Reproducibility: easier to clone and run
+
+        Transparency: Common errors are documented.
+
+        Onboarding speed: Reduced time to first success for team members
+
+POC Step 3: Logger Improvements (Design Pattern Required)
+
+    Challenge:
+    The template used only console.log, which was unsuitable for production serverless apps (no persistence, no configurable destinations, etc)
+
+    Solution Chosen:
+
+        Defined a Logger interface and two implementations:
+
+            ConsoleLogger (for local developement)
+
+            CloudWatchLogger (writes to AWS CloudWatch)
+
+        Applied the Strategy Pattern so the logger can be swapped based on NODE_ENV.
+
+    Advantages over Original Template:
+
+        Environment specific logging: Development logs can stay local, and production logs persist in CloudWatch
+
+        Extensibility: new logger implementations can be added without changing handlers
+
+        Better observability: new logs improve monitoring and debugging
+
+POC Step 4: Optional & Mandatory Middleware (Design Pattern Required)
+
+    Challenge:
+    The original template didnt have a structured middleware system. All middleware were optional or hardwired, and authentication wasnt guaranteed, so create a new structure and replace the old one was tricky
+
+    Solution Chosen:
+
+        Created witMiddleware functions using the Chain of Responsibility Pattern.
+
+        Allowed separation of mandatory middlewares (authMiddleware) from optional ones (loggerMiddleware)
+
+        Each middlewares execute() either throws an error or passes control to the next.
+
+    Advantages over Original Template:
+
+        Flexible chaining: Easily manipulate middlewares (add, modify and delete).
+
+        Enforced authentication: non optional middleware always runs first, to avoid unauthorized access
+
+        Modularity: Each middleware focuses on a single task (auth, validation, logging)
+
+POC Step 5: Repository Layer Improvements (Decoupling & Reusability)
+
+    Challenge:
+    Handlers accessed repositories directly, mixing data with business. No multiple data sources or swapping of repositories
+
+    Solution Chosen:
+
+        Introduced a service layer (UserService, PaymentService, logger) between handlers and repositories
+
+        Repositories remain simple data access classes, while services handle business rules
+
+    Advantages over Original Template:
+
+        Decoupling: Business logic and data are now separated
+
+        Reusability: Services can be reused in othe contexts
+
+        Testability: repositories con mock in tests without touching handlers
+
+POC Step 6: Deployment & Testing
+
+    Challenge:
+    The original template had no automated tests or DB cloud integration.
+
+    Solution Chosen:
+
+        Implemented two unit test functions (with Jest), to simulate APIGatewayProxyEvent and its context
+
+        services were configurated to read from simulated cloud database (repos in memory).
+
+        a Postman collection with two requests for the live endpoints (/example-one, /example-two), including headers and bodies
+
+    Advantages over Original Template:
+
+        testing: handler logic remains correct during changes
+
+        Cloud integration: Services already structured to connect to real cloud databases
+
+        Easy testing: Postman collection lets developers quickly validate the deployed API
+
 
